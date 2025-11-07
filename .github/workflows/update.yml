@@ -1,0 +1,34 @@
+name: Auto Update Dependency
+
+on:
+  repository_dispatch:
+    types: [dependency-update]
+
+jobs:
+  update-dependency:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+      
+      - name: Update dependency
+        run: |
+          yarn upgrade ${{ github.event.client_payload.package }}@${{ github.event.client_payload.version }}
+      
+      - name: Create Pull Request
+        uses: peter-evans/create-pull-request@v6
+        with:
+          token: ${{ secrets.GITHUB_TOKEN }}
+          commit-message: "chore: update ${{ github.event.client_payload.package }} to ${{ github.event.client_payload.version }}"
+          title: "chore: update ${{ github.event.client_payload.package }} to ${{ github.event.client_payload.version }}"
+          body: |
+            Auto-generated PR to update dependency
+            
+            - Package: ${{ github.event.client_payload.package }}
+            - Version: ${{ github.event.client_payload.version }}
+          branch: "deps/${{ github.event.client_payload.package }}-${{ github.event.client_payload.version }}"
+          delete-branch: true
